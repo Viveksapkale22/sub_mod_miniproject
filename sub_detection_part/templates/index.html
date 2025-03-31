@@ -1,0 +1,429 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>{% block title %}AI Enhanced Home{% endblock %}</title>
+  <style>
+    /* Base Styles */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      margin: 0; padding: 0;
+      color: #e2e8f0;
+    }
+    h1 {
+      margin: 0.5em 0; font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 30px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+      backdrop-filter: blur(5px);
+    }
+    /* Video Wrapper */
+    .video-wrapper {
+      position: relative;
+      padding-top: 56.25%;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+    .video-wrapper img {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .loading {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      display: block;
+      z-index: 2;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 5px solid #f3f3f3;
+      border-top: 6px solid #2f80ed;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    /* Modal Styles */
+    #select-detection-modal {
+      display: none;
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 20px;
+      width: 300px; text-align: left;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+      backdrop-filter: blur(5px);
+      z-index: 999; color: #e2e8f0;
+    }
+    #close-modal {
+      position: absolute; top: 5px; right: 8px;
+      font-size: 24px; cursor: pointer;
+      color: #999; transition: color 0.2s;
+    }
+    #close-modal:hover { color: #fff; }
+    #select-detection-modal h2 {
+      margin-top: 0; font-size: 1.5em;
+      color: #f7fafc;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+    #select-detection-modal label {
+      display: block; margin-bottom: 10px;
+      font-size: 0.95em; font-weight: 600;
+    }
+    #select-detection-modal button {
+      background-color: #e53e3e; color: #fff;
+      border: none; padding: 10px; border-radius: 4px;
+      cursor: pointer; transition: background-color 0.3s ease;
+      text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+    }
+    #select-detection-modal button:hover {
+      background-color: #c53030;
+    }
+    /* Area Coordinates */
+    #area-coords {
+      margin-top: 10px;
+    }
+    #area-coords label {
+      margin-bottom: 5px;
+    }
+    /* Dropdown Styles */
+    .dropdown {
+      position: relative; display: inline-block;
+      margin-bottom: 20px;
+    }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      background-color: rgba(255,255,255,0.9);
+      min-width: 160px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+      z-index: 20; list-style: none; padding: 0; margin: 0;
+      border-radius: 4px;
+    }
+    .dropdown-menu li a {
+      color: #2d3748; padding: 10px 16px;
+      text-decoration: none; display: block;
+      transition: background 0.2s;
+    }
+    .dropdown-menu li a:hover {
+      background-color: #e2e8f0;
+    }
+    .dropdown:hover .dropdown-menu {
+      display: block;
+    }
+    .dropdown button {
+      background-color: #2f80ed; color: #fff;
+      border: none; padding: 10px 20px;
+      border-radius: 4px; cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s;
+      text-transform: uppercase; font-weight: 600;
+    }
+    .dropdown button:hover {
+      background-color: #1366d6;
+      transform: scale(1.02);
+    }
+    /* Vertical Line Separator */
+    .vertical-line {
+      width: 1px; background-color: #718096;
+      margin: 0 20px; height: 60px;
+    }
+    /* Button Row */
+    .button-row {
+      display: flex; justify-content: center; align-items: center;
+      position: relative; z-index: 10; margin-bottom: 20px;
+    }
+    .button-col {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    button {
+      background-color: #2f80ed; color: #fff;
+      border: none; padding: 10px 20px;
+      border-radius: 4px; margin: 5px; cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s;
+      text-transform: uppercase; font-weight: 600;
+    }
+    button:hover {
+      background-color: #1366d6; transform: scale(1.02);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align:center; font-size:2rem; text-shadow:0 2px 4px rgba(0,0,0,0.6);">
+      Welcome, {{ username }}!
+    </h1>
+    <h1 style="text-align:center; font-size:1.5rem; margin-bottom:30px; text-shadow:0 2px 4px rgba(0,0,0,0.6);">
+      NORMAL_DETECTION
+    </h1>
+
+    <div class="video-wrapper">
+      <div class="loading" id="loading-message" style="display: block;">
+        <div class="spinner"></div>
+      </div>
+      <img id="placeholder" src="{{ url_for('static', filename='placeholder.gif') }}" alt="" style="display: block;">
+      <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Video feed" style="display: none;">
+    </div>
+
+    <div class="button-row">
+      <div class="button-col">
+        <div class="dropdown">
+          <button id="choose-btn">Choose</button>
+          <ul class="dropdown-menu">
+            <!-- For upload, clear detection settings then navigate -->
+            <li><a href="#" id="upload-option">Upload a New Video</a></li>
+            <li><a href="#" id="camera-option">Camera</a></li>
+            <li><a href="#" id="cctv-option">CCTV</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="vertical-line"></div>
+
+      <div class="button-col">
+        <button id="terminate-btn" onclick="terminateVideo();">Terminate Video</button>
+        <button id="refresh-btn" onclick="refreshVideo();">Refresh Video Feed</button>
+      </div>
+
+      <div class="vertical-line"></div>
+
+      <div class="button-col">
+        <button id="select-detection-btn" type="button">Detection Setting</button>
+        <button id="toggle-counting-btn" onclick="document.forms['toggleCountingForm'].submit();">
+          Toggle Person Counting
+        </button>
+        <form name="toggleCountingForm" action="{{ url_for('toggle_counting') }}" method="POST" style="display:none;"></form>
+      </div>
+    </div>
+
+    <audio id="alert-sound" src="{{ url_for('static', filename='bip.mp3') }}" preload="auto"></audio>
+  </div>
+
+  <div id="select-detection-modal">
+    <span id="close-modal">&times;</span>
+    <h2>Detection Setting</h2>
+    <label>
+      Gender:
+<select id="gender-select" onchange="updateGenderPreference()">
+    <option value="both">Both</option>
+    <option value="man">Male</option>
+    <option value="female">Female</option>
+    <option value="none">None</option>
+</select>
+    </label>
+    <label><input type="checkbox" id="alert-bip-sound"> Alert Bip Sound</label>
+    <label><input type="checkbox" id="restrict-area"> Restrict the Area</label>
+    <div id="area-coords">
+      <label>X: <input type="number" id="area-x" value="0"><br> Range:0 to 625</label>
+      <label>Y: <input type="number" id="area-y" value="60"><br> Range:60 to 400</label>
+      <label>Width: <input type="number" id="area-w" value="300"><br> Range:0 to 625</label>
+      <label>Height: <input type="number" id="area-h" value="350"><br> Range:0 to 350</label>
+    </div>
+    <button id="save-detection-btn" type="button">Save</button>
+  </div>
+
+  <script>
+    var currentFeedURL = "{{ url_for('video_feed') }}";
+    var videoTerminated = false;
+
+    const videoFeed = document.getElementById('video-feed');
+    const placeholder = document.getElementById('placeholder');
+    const loadingMessage = document.getElementById('loading-message');
+    const selectDetectionBtn = document.getElementById('select-detection-btn');
+    const selectDetectionModal = document.getElementById('select-detection-modal');
+    const saveDetectionBtn = document.getElementById('save-detection-btn');
+    const closeModal = document.getElementById('close-modal');
+
+    closeModal.addEventListener('click', function() {
+      selectDetectionModal.style.display = 'none';
+    });
+
+    document.getElementById('restrict-area').addEventListener('change', function() {
+      document.getElementById('area-coords').style.display =
+        this.checked ? 'block' : 'none';
+    });
+
+    // Upload option: clear detection settings then navigate to upload page
+    document.getElementById('upload-option').addEventListener('click', function(e) {
+      e.preventDefault();
+      videoTerminated = false;
+      fetch("{{ url_for('clear_detection_settings') }}", { method: "POST" })
+        .then(() => {
+          window.location.href = "{{ url_for('upload') }}";
+        })
+        .catch(err => {
+          console.error("Error clearing detection settings:", err);
+        });
+    });
+
+    // Camera feed option
+    document.getElementById('camera-option').addEventListener('click', function(e) {
+      e.preventDefault();
+      videoTerminated = false;
+      fetch("{{ url_for('clear_detection_settings') }}", { method: "POST" })
+        .then(() => {
+          currentFeedURL = "{{ url_for('camera_feed') }}";
+          videoFeed.src = currentFeedURL + '?t=' + new Date().getTime();
+          loadingMessage.style.display = 'none';
+          videoFeed.style.display = 'block';
+          placeholder.style.display = 'none';
+        })
+        .catch(err => {
+          console.error("Error clearing detection settings:", err);
+        });
+    });
+
+    // CCTV feed option
+    document.getElementById('cctv-option').addEventListener('click', function(e) {
+      e.preventDefault();
+      videoTerminated = false;
+      fetch("{{ url_for('clear_detection_settings') }}", { method: "POST" })
+        .then(() => {
+          currentFeedURL = "{{ url_for('cctv_feed') }}";
+          videoFeed.src = currentFeedURL + '?t=' + new Date().getTime();
+          loadingMessage.style.display = 'none';
+          videoFeed.style.display = 'block';
+          placeholder.style.display = 'none';
+        })
+        .catch(err => {
+          console.error("Error clearing detection settings:", err);
+        });
+    });
+
+    selectDetectionBtn.addEventListener('click', function() {
+      selectDetectionModal.style.display = 'block';
+    });
+
+    saveDetectionBtn.addEventListener('click', function() {
+
+      const selectedGender = document.getElementById("gender-select").value;
+          // 1️⃣ Send Gender Update Request
+      fetch("/update_gender?gender=" + encodeURIComponent(selectedGender))
+    .then(response => response.json())
+    .then(data => console.log("Gender Updated:", data.selected_gender))
+    .catch(error => console.error("Error updating gender:", error));
+
+      if (document.getElementById('restrict-area').checked) {
+        const x = document.getElementById('area-x').value;
+        const y = document.getElementById('area-y').value;
+        const w = document.getElementById('area-w').value;
+        const h = document.getElementById('area-h').value;
+
+        fetch("{{ url_for('set_restricted_area') }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "x=" + encodeURIComponent(x) +
+                "&y=" + encodeURIComponent(y) +
+                "&w=" + encodeURIComponent(w) +
+                "&h=" + encodeURIComponent(h)
+        }).then(response => {
+          if (response.ok) {
+            refreshVideo();
+          } else {
+            alert("Error setting restricted area");
+          }
+        }).catch(error => {
+          alert("Error: " + error);
+        });
+      } else {
+        refreshVideo();
+      }
+      selectDetectionModal.style.display = 'none';
+    });
+
+    
+
+    function refreshVideo() {
+      if (videoTerminated) {
+        alert("Video has been terminated. Please reselect a feed from the Choose menu to start again.");
+        return;
+      }
+      if (currentFeedURL) {
+        videoFeed.src = currentFeedURL + '?t=' + new Date().getTime();
+        videoFeed.style.display = 'block';
+        placeholder.style.display = 'none';
+        loadingMessage.style.display = 'none';
+      }
+    }
+
+    function terminateVideo() {
+      fetch("{{ url_for('terminate_video_feed') }}", { method: "POST" })
+        .then(response => {
+          videoFeed.src = "";
+          videoFeed.style.display = 'none';
+          placeholder.style.display = 'none';
+          loadingMessage.style.display = 'block';
+          videoTerminated = true;
+        })
+        .catch(error => {
+          console.error("Error terminating video feed:", error);
+        });
+    }
+   
+    videoFeed.onloadstart = () => {
+      loadingMessage.style.display = 'block';
+      videoFeed.style.display = 'none';
+      placeholder.style.display = 'none';
+    };
+
+    videoFeed.onload = () => {
+      loadingMessage.style.display = 'none';
+      videoFeed.style.display = 'block';
+      placeholder.style.display = 'none';
+    };
+
+    videoFeed.onerror = () => {
+      if (!videoTerminated) {
+        loadingMessage.textContent = 'Error loading video stream.';
+      } else {
+        loadingMessage.innerHTML = '<div class="spinner"></div>';
+        loadingMessage.style.display = 'block';
+      }
+    };
+
+  //   setInterval(() => {
+  //     fetch("{{ url_for('alert_status') }}")
+  //       .then(res => res.json())
+  //       .then(data => {
+  //         if (data.alert) {
+  //           if (document.getElementById('alert-bip-sound').checked && alertSound.paused) {
+  //             alertSound.play();
+  //           }
+  //         } else {
+  //           alertSound.pause();
+  //           alertSound.currentTime = 0;
+  //         }
+  //       })
+  //       .catch(err => {
+  //         console.error("Error fetching alert status:", err);
+  //       });
+  //   }, 500);
+   </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+          integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+          integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+          crossorigin="anonymous"></script>
+</body>
+</html>
+
+
